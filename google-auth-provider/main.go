@@ -90,16 +90,14 @@ func main() {
 	oauthProxyOpts.Logging.AuthEnabled = false
 	oauthProxyOpts.Logging.StandardEnabled = false
 
-	// Override the default approval_prompt=force to enable seamless SSO.
-	// When the user already has a Google session (e.g., from NextAuth login),
-	// prompt=none allows automatic authentication without any Google UI.
-	// If the user isn't logged into Google, this will fail - they should
-	// login via MAI Stack first which establishes the Google session.
+	// Remove the default approval_prompt=force which oauth2-proxy sets for Google.
+	// This forces re-consent on every login, which is terrible UX.
+	// By setting an empty LoginURLParameters, we let Google use its default behavior:
+	// - First login: show consent screen once
+	// - Subsequent logins: skip consent (user already authorized)
 	// See: https://github.com/oauth2-proxy/oauth2-proxy/issues/191
 	if len(oauthProxyOpts.Providers) > 0 {
-		oauthProxyOpts.Providers[0].LoginURLParameters = []options.LoginURLParameter{
-			{Name: "prompt", Default: []string{"none"}},
-		}
+		oauthProxyOpts.Providers[0].LoginURLParameters = []options.LoginURLParameter{}
 	}
 
 	if err = validation.Validate(oauthProxyOpts); err != nil {
